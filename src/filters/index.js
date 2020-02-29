@@ -1,5 +1,6 @@
 // import parseTime, formatTime and set to filter
 export { parseTime, formatTime } from '@/utils'
+export { formatDate, parseDate, isDateObject, getWeekNumber } from 'element-ui/src/utils/date-util'
 
 /**
  * Show plural label if time is plural number

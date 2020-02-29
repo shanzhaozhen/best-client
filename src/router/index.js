@@ -106,6 +106,10 @@ export const allRoutes = {
     name: 'RolePermission',
     component: () => import('@/views/permission/role')
   },
+  'UserPermission': {
+    name: 'UserPermission',
+    component: () => import('@/views/permission/user')
+  },
   'SystemConfig': {
     name: 'SystemConfig',
     component: Layout

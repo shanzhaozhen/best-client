@@ -1,28 +1,17 @@
 <template>
   <div class="app-container">
-    <el-button type="primary" @click="handleAdd">创建角色</el-button>
-
-    <el-table v-loading="listLoading" border :data="roleList" style="width: 100%;margin-top:30px;" @sort-change="sortChange">
-      <el-table-column align="center" label="id" prop="id" sortable width="60">
-        <template slot-scope="scope">
-          {{ scope.row.id }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="名称" prop="name" sortable width="220">
-        <template slot-scope="scope">
-          {{ scope.row.name }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="标识名称" prop="identification" sortable width="220">
-        <template slot-scope="scope">
-          {{ scope.row.identification }}
-        </template>
-      </el-table-column>
-      <el-table-column align="header-center" prop="description" sortable label="描述">
-        <template slot-scope="scope">
-          {{ scope.row.description }}
-        </template>
-      </el-table-column>
+    <div class="filter-container">
+      <el-button class="filter-item" type="primary" @click="handleAdd">创建角色</el-button>
+      <div class="filter-item" style="float: right">
+        <el-input v-model="listQuery.keyword" class="filter-item" placeholder="请输入关键字" style="width: 200px;" @keyup.enter.native="getRolePage" />
+        <el-button v-waves class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-search" @click="getRolePage">查询</el-button>
+      </div>
+    </div>
+    <el-table v-loading="listLoading" border :data="roleList" style="width: 100%;" @sort-change="sortChange">
+      <el-table-column align="center" label="id" prop="id" sortable width="60" />
+      <el-table-column align="center" label="名称" prop="name" sortable width="220" />
+      <el-table-column align="center" label="标识名称" prop="identification" sortable width="220" />
+      <el-table-column align="header-center" prop="description" sortable label="描述" />
       <el-table-column align="center" label="操作" width="150">
         <template slot-scope="scope">
           <el-button type="primary" size="small" @click="handleEdit(scope)">编辑</el-button>
@@ -33,8 +22,8 @@
 
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.current" :limit.sync="listQuery.size" @pagination="getRolePage" />
 
-    <el-dialog v-loading="dialogLoading" :visible.sync="dialogVisible" :destroy-on-close="true" :title="dialogType==='new'?'创建角色':'编辑角色'">
-      <el-form ref="roleForm" :model="role" label-width="80px" label-position="left" :rules="rules">
+    <el-dialog :visible.sync="dialogVisible" :destroy-on-close="true" :title="dialogType==='new'?'创建角色':'编辑角色'">
+      <el-form ref="roleForm" v-loading="formLoading" :model="role" label-width="80px" label-position="left" :rules="rules">
         <el-form-item label="名称" prop="name">
           <el-input v-model="role.name" placeholder="角色名称" />
         </el-form-item>
@@ -58,8 +47,6 @@
             :check-strictly="checkStrictly"
             :data="routeTree"
             :props="routeTreeProps"
-            :default-expanded-keys="role.routeIds"
-            @check-change="checkRouteTreeChange"
           />
         </el-form-item>
         <el-form-item label="权限分配">
@@ -71,24 +58,23 @@
             :check-strictly="checkStrictly"
             :data="resourceTree"
             :props="resourceTreeProps"
-            :default-expanded-keys="role.resourceIds"
-            @check-change="checkResourceTreeChange"
           />
         </el-form-item>
       </el-form>
       <div style="text-align:right;">
         <el-button type="danger" @click="dialogVisible=false">取消</el-button>
-        <el-button v-loading="loading" type="primary" @click="dialogType==='new'?createData():updateData()">确定</el-button>
+        <el-button v-loading="confirmLoading" type="primary" @click="confirmRole">确定</el-button>
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script>
+import waves from '@/directive/waves'
 import { getRolePage, getRoleById, addRole, updateRole, deleteRole } from '@/api/role'
 import { getAllRouteTree } from '@/api/route'
 import Pagination from '@/components/Pagination'
-import { getAllResourceTree } from '../../api/resource' // 分页模块
+import { getAllResourceTree } from '@/api/resource' // 分页模块
 
 const defaultRole = {
   id: '',
@@ -102,6 +88,7 @@ const defaultRole = {
 export default {
   name: 'Role',
   components: { Pagination },
+  directives: { waves },
   data() {
     return {
       total: 0,
@@ -112,13 +99,13 @@ export default {
         keyword: '',
         orders: []
       },
-      loading: false,
+      confirmLoading: false,
       role: Object.assign({}, defaultRole),
       routeTree: [],
       resourceTree: [],
       roleList: [],
       dialogVisible: false,
-      dialogLoading: false,
+      formLoading: false,
       dialogType: 'new',
       checkStrictly: true,
       routeTreeProps: {
@@ -145,11 +132,9 @@ export default {
   methods: {
     async getRolePage() {
       this.listLoading = true
-      const { data } = await getRolePage(this.listQuery).catch(() => {
-        this.listLoading = false
-      })
-      this.roleList = data.records
-      this.total = data.total
+      const res = await getRolePage(this.listQuery)
+      this.roleList = res.data.records
+      this.total = res.data.total
       this.listLoading = false
     },
     async getRouteTree() {
@@ -177,91 +162,66 @@ export default {
       }
       this.getRolePage()
     },
-    checkRouteTreeChange() {
-      this.role.routeIds = this.$refs.routeTree.getCheckedKeys()
-    },
-    checkResourceTreeChange() {
-      this.role.resourceIds = this.$refs.resourceTree.getCheckedKeys()
-    },
     async handleAdd() {
-      this.role = {}
-      this.loading = false
-      this.dialogType = 'new'
       this.role = Object.assign({}, defaultRole)
+      await this.getRouteTree()
+      await this.getResourceTree()
+      if (this.$refs.routeTree) {
+        this.$refs.routeTree.setCheckedNodes([])
+      }
+      if (this.$refs.resourceTree) {
+        this.$refs.resourceTree.setCheckedNodes([])
+      }
+      this.dialogType = 'new'
+      this.confirmLoading = false
       this.dialogVisible = true
-      await this.getRouteTree().then(() => {
-        this.$refs.routeTree.setCheckedKeys([])
-      })
-      await this.getRouteTree().then(() => {
-        this.$refs.resourceTree.setCheckedKeys([])
-      })
-      this.dialogLoading = false
     },
     async handleEdit(scope) {
-      this.role = {}
-      this.loading = false
       this.dialogType = 'edit'
-      await getRoleById(scope.row.id).then(async res => {
-        this.role = res.data
-        this.dialogVisible = true
-        this.$nextTick(() => {
-          this.getRouteTree().then(() => {
-            this.$refs.routeTree.setCheckedKeys(this.role.routeIds || [])
-          })
-          this.getResourceTree().then(() => {
-            this.$refs.resourceTree.setCheckedKeys(this.role.resourceIds || [])
-          })
-        })
+      this.confirmLoading = false
+      this.dialogVisible = true
+      this.formLoading = true
+      this.checkStrictly = true
+      const res = await getRoleById(scope.row.id)
+      await this.getRouteTree()
+      await this.getResourceTree()
+      this.role = res.data
+      this.$nextTick(() => {
+        this.$refs.routeTree.setCheckedKeys(this.role.routeIds || [])
+        this.$refs.resourceTree.setCheckedKeys(this.role.resourceIds || [])
+        this.checkStrictly = false
       })
-      this.dialogLoading = false
+      this.formLoading = false
     },
-    createData() {
+    async confirmRole() {
       this.$refs.roleForm.validate(async valid => {
         if (valid) {
-          this.loading = true
-          await addRole(this.role).then(res => {
-            const { name, identification, description } = this.role
-            this.dialogVisible = false
-            this.$notify({
-              title: '添加成功',
-              dangerouslyUseHTMLString: true,
-              message: `
+          this.confirmLoading = true
+          const isEdit = this.dialogType === 'edit'
+
+          this.role.routeIds = this.$refs.routeTree.getCheckedKeys()
+          this.role.resourceIds = this.$refs.resourceTree.getCheckedKeys()
+
+          if (isEdit) {
+            await updateRole(this.role)
+          } else {
+            await addRole(this.role)
+          }
+
+          this.confirmLoading = false
+          this.dialogVisible = false
+          this.getRolePage()
+
+          const { name, identification, description } = this.role
+          this.$notify({
+            title: isEdit ? '修改成功' : '添加成功',
+            dangerouslyUseHTMLString: true,
+            message: `
                 <div>名称: ${name}</div>
                 <div>标识名称：${identification}</div>
                 <div>描述: ${description}</div>
               `,
-              type: 'success'
-            })
-            this.loading = false
-            this.getRoles()
-          }).catch(() => {
-            this.loading = false
-          })
-        }
-      })
-    },
-    updateData() {
-      this.$refs.roleForm.validate(async valid => {
-        if (valid) {
-          this.loading = true
-          console.log(this.role)
-          await updateRole(this.role).then(res => {
-            const { name, identification, description } = this.role
-            this.dialogVisible = false
-            this.$notify({
-              title: '修改成功',
-              dangerouslyUseHTMLString: true,
-              message: `
-                <div>名称: ${name}</div>
-                <div>标识名称：${identification}</div>
-                <div>描述: ${description}</div>
-              `,
-              type: 'success'
-            })
-            this.loading = false
-            this.getRoles()
-          }).catch(() => {
-            this.loading = false
+            type: 'success'
           })
         }
       })
@@ -278,7 +238,7 @@ export default {
           type: 'success',
           message: '删除成功!'
         })
-        this.getRoles()
+        this.getRolePage()
       }).catch(() => {
         this.$message({
           type: 'warning',

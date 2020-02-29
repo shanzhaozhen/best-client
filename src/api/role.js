@@ -1,5 +1,12 @@
 import request from '@/utils/request'
 
+export function getAllRoleList() {
+  return request({
+    url: '/role/all',
+    method: 'get'
+  })
+}
+
 export function getRolePage(query) {
   return request({
     url: '/role/page',

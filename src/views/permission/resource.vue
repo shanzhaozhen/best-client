@@ -1,43 +1,15 @@
 <template>
   <div class="app-container">
-    <el-button type="primary" @click="handleAdd">创建资源</el-button>
-
-    <el-table v-loading="listLoading" :data="resourceList" style="width: 100%;margin-top:30px;" row-key="id" :tree-props="{children: 'children', hasChildren: 'hasChildren'}" border>
-      <el-table-column align="center" label="id" width="60">
-        <template slot-scope="scope">
-          {{ scope.row.id }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="名称" width="120">
-        <template slot-scope="scope">
-          {{ scope.row.name }}
-        </template>
-      </el-table-column>
-      <el-table-column align="header-center" label="描述">
-        <template slot-scope="scope">
-          {{ scope.row.description }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="类型" width="80">
-        <template slot-scope="scope">
-          {{ scope.row.type }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="路由" width="160">
-        <template slot-scope="scope">
-          {{ scope.row.path }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="可用请求" width="160">
-        <template slot-scope="scope">
-          {{ scope.row.path }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="排序等级" width="80">
-        <template slot-scope="scope">
-          {{ scope.row.priority }}
-        </template>
-      </el-table-column>
+    <div class="filter-container">
+      <el-button class="filter-item" type="primary" @click="handleAdd">创建资源</el-button>
+    </div>
+    <el-table v-loading="listLoading" :data="resourceList" style="width: 100%;" row-key="id" :tree-props="{children: 'children', hasChildren: 'hasChildren'}" border>
+      <el-table-column align="center" label="id" prop="id" width="60" />
+      <el-table-column align="center" label="名称" prop="name" width="120" />
+      <el-table-column align="header-center" label="描述" prop="description" />
+      <el-table-column align="center" label="类型" prop="type" width="80" />
+      <el-table-column align="center" label="路由" prop="path" width="160" />
+      <el-table-column align="center" label="排序等级" prop="priority" width="80" />
       <el-table-column align="center" label="操作" width="150">
         <template slot-scope="scope">
           <el-button type="primary" size="small" @click="handleEdit(scope)">编辑</el-button>
@@ -133,7 +105,7 @@
       </el-form>
       <div style="text-align:right;">
         <el-button type="danger" @click="dialogVisible=false">取消</el-button>
-        <el-button :loading="loading" type="primary" @click="dialogType==='new'?createData():updateData()">确定</el-button>
+        <el-button :loading="confirmLoading" type="primary" @click="confirmResource">确定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -172,7 +144,7 @@ export default {
     }
     return {
       listLoading: true,
-      loading: false,
+      confirmLoading: false,
       resource: Object.assign({}, defaultResource),
       resourceList: [],
       resourceRootList: [],
@@ -202,9 +174,7 @@ export default {
   methods: {
     async getAllResourceTree() {
       this.listLoading = true
-      const res = await getAllResourceTree().catch(() => {
-        this.listLoading = false
-      })
+      const res = await getAllResourceTree()
       this.resourceList = res.data
       this.listLoading = false
     },
@@ -226,66 +196,47 @@ export default {
       return list
     },
     async handleAdd() {
-      this.loading = false
       this.resource = Object.assign({}, defaultResource)
       this.dialogType = 'new'
       await this.getAllResourceRootTree()
+      this.confirmLoading = false
       this.dialogVisible = true
     },
     async handleEdit(scope) {
-      this.loading = false
       this.dialogType = 'edit'
-      getResourceById(scope.row.id).then(async res => {
-        this.resource = res.data
-        await this.getAllResourceRootTree([this.resource.id])
-        this.dialogVisible = true
-      })
+      const res = await getResourceById(scope.row.id)
+      this.resource = res.data
+      await this.getAllResourceRootTree([this.resource.id])
+      this.confirmLoading = false
+      this.dialogVisible = true
     },
-    createData() {
+    confirmResource() {
       this.$refs.resourceForm.validate(async valid => {
         if (valid) {
-          this.loading = true
-          await addResource(this.resource).then(res => {
-            const { name, description } = this.resource
-            this.dialogVisible = false
-            this.$notify({
-              title: '添加成功',
-              dangerouslyUseHTMLString: true,
-              message: `
-                <div>名称: ${name}</div>
-                <div>描述: ${description}</div>
-              `,
-              type: 'success'
-            })
-            this.loading = false
-            this.getAllResourceTree()
-          }).catch(() => {
-            this.loading = false
+          this.confirmLoading = true
+          const isEdit = this.dialogType === 'edit'
+
+          if (isEdit) {
+            await updateResource(this.resource)
+          } else {
+            await addResource(this.resource)
+          }
+
+          this.dialogVisible = false
+          this.confirmLoading = false
+
+          const { name, description } = this.resource
+          this.$notify({
+            title: isEdit ? '修改成功' : '添加成功',
+            dangerouslyUseHTMLString: true,
+            message: `
+              <div>名称: ${name}</div>
+              <div>描述: ${description}</div>
+            `,
+            type: 'success'
           })
-        }
-      })
-    },
-    updateData() {
-      this.$refs.resourceForm.validate(async valid => {
-        if (valid) {
-          this.loading = true
-          await updateResource(this.resource).then(res => {
-            const { name, description } = this.resource
-            this.dialogVisible = false
-            this.$notify({
-              title: '修改成功',
-              dangerouslyUseHTMLString: true,
-              message: `
-                <div>名称: ${name}</div>
-                <div>描述: ${description}</div>
-              `,
-              type: 'success'
-            })
-            this.loading = false
-            this.getAllResourceTree()
-          }).catch(() => {
-            this.loading = false
-          })
+          this.confirmLoading = false
+          this.getAllResourceTree()
         }
       })
     },

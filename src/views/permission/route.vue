@@ -1,43 +1,20 @@
 <template>
   <div class="app-container">
-    <el-button type="primary" @click="handleAdd">创建路由</el-button>
-
-    <el-table v-loading="listLoading" :data="routeList" style="width: 100%;margin-top:30px;" row-key="id" :tree-props="{children: 'children', hasChildren: 'hasChildren'}" border>
-      <el-table-column align="center" label="id" width="60">
-        <template slot-scope="scope">
-          {{ scope.row.id }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="显示名称" width="180">
-        <template slot-scope="scope">
-          {{ scope.row.title }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="组件名称" width="180">
-        <template slot-scope="scope">
-          {{ scope.row.name }}
-        </template>
-      </el-table-column>
-      <el-table-column align="header-center" label="描述">
-        <template slot-scope="scope">
-          {{ scope.row.description }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="路由" width="160">
-        <template slot-scope="scope">
-          {{ scope.row.path }}
-        </template>
-      </el-table-column>
+    <div class="filter-container">
+      <el-button class="filter-item" type="primary" @click="handleAdd">创建路由</el-button>
+    </div>
+    <el-table v-loading="listLoading" :data="routeList" style="width: 100%;" row-key="id" :tree-props="{children: 'children', hasChildren: 'hasChildren'}" border>
+      <el-table-column align="center" label="id" prop="id" width="60" />
+      <el-table-column align="center" label="显示名称" prop="title" width="180" />
+      <el-table-column align="center" label="组件名称" prop="name" width="180" />
+      <el-table-column align="header-center" prop="description" label="描述" />
+      <el-table-column align="center" label="路由" prop="path" width="160" />
       <el-table-column align="center" label="图标" width="80">
         <template slot-scope="scope">
           <svg-icon v-if="scope.row.icon" :icon-class="scope.row.icon" />
         </template>
       </el-table-column>
-      <el-table-column align="center" label="排序等级" width="80">
-        <template slot-scope="scope">
-          {{ scope.row.priority }}
-        </template>
-      </el-table-column>
+      <el-table-column align="center" label="排序等级" prop="priority" width="80" />
       <el-table-column align="center" label="隐藏菜单" width="80">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.hidden === true" type="success">是</el-tag>
@@ -59,7 +36,7 @@
     </el-table>
 
     <el-dialog :visible.sync="dialogVisible" :title="dialogType==='edit'?'编辑菜单':'新建菜单'">
-      <el-form ref="routeForm" :model="route" label-width="90px" label-position="right" :rules="rules">
+      <el-form ref="routeForm" v-loading="formLoading" :model="route" label-width="90px" label-position="right" :rules="rules">
         <el-row>
           <el-col :span="12">
             <el-form-item label="显示名称" prop="title">
@@ -167,7 +144,7 @@
       </el-form>
       <div style="text-align:right;">
         <el-button type="danger" @click="dialogVisible=false">取消</el-button>
-        <el-button :loading="loading" type="primary" @click="dialogType==='new'?createData():updateData()">确定</el-button>
+        <el-button :loading="confirmLoading" type="primary" @click="confirmRoute">确定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -179,7 +156,7 @@ import { allRoutes } from '@/router'
 import { allIcons } from '@/icons'
 import { getAllRouteTree, addRoute, updateRoute, deleteRoute } from '@/api/route'
 import { deepClone } from '@/utils'
-import { getRouteById } from '../../api/route'
+import { getRouteById } from '@/api/route'
 
 const defaultRoute = {
   id: null,
@@ -206,7 +183,8 @@ export default {
   data() {
     return {
       listLoading: true,
-      loading: false,
+      confirmLoading: false,
+      formLoading: false,
       routerOptions: allRoutes,
       allIcons: allIcons,
       route: Object.assign({}, defaultRoute),
@@ -248,9 +226,7 @@ export default {
   methods: {
     async getAllRouteTree() {
       this.listLoading = true
-      const res = await getAllRouteTree().catch(() => {
-        this.listLoading = false
-      })
+      const res = await getAllRouteTree()
       this.routeList = res.data
       this.listLoading = false
     },
@@ -268,73 +244,52 @@ export default {
       return list
     },
     async handleAdd() {
-      this.loading = false
       this.route = Object.assign({}, defaultRoute)
       this.dialogType = 'new'
       this.routeTree = deepClone(this.routeList)
+      this.confirmLoading = false
       this.dialogVisible = true
     },
     async handleEdit(scope) {
-      this.loading = false
       this.dialogType = 'edit'
-      getRouteById(scope.row.id).then(res => {
-        this.route = res.data
-        this.routeTree = this.excludeRouteTreeNode([scope.row.id], deepClone(this.routeList))
-        this.dialogVisible = true
-      })
+      const res = await getRouteById(scope.row.id)
+      this.route = res.data
+      this.routeTree = this.excludeRouteTreeNode([scope.row.id], deepClone(this.routeList))
+      this.confirmLoading = false
+      this.dialogVisible = true
     },
-    createData() {
+    confirmRoute() {
       this.$refs.routeForm.validate(async valid => {
         if (valid) {
-          this.loading = true
-          await addRoute(this.route).then(res => {
-            const { name, description } = this.route
-            this.dialogVisible = false
-            this.$notify({
-              title: '添加成功',
-              dangerouslyUseHTMLString: true,
-              message: `
-                <div>名称: ${name}</div>
-                <div>描述: ${description}</div>
-              `,
-              type: 'success'
-            })
-            this.loading = false
-            this.getAllRouteTree()
-          }).catch(() => {
-            this.loading = false
-          })
-        }
-      })
-    },
-    updateData() {
-      this.$refs.routeForm.validate(async valid => {
-        if (valid) {
-          this.loading = true
-          await updateRoute(this.route).then(res => {
-            console.log(res)
-            const { name, description } = this.route
-            this.dialogVisible = false
-            this.$notify({
-              title: '修改成功',
-              dangerouslyUseHTMLString: true,
-              message: `
-                <div>名称: ${name}</div>
-                <div>描述: ${description}</div>
-              `,
-              type: 'success'
-            })
-            this.loading = false
-            this.getAllRouteTree()
-          }).catch(() => {
-            this.loading = false
+          this.confirmLoading = true
+          const isEdit = this.dialogType === 'edit'
+
+          if (isEdit) {
+            await updateRoute(this.route)
+          } else {
+            await addRoute(this.role)
+          }
+
+          this.confirmLoading = false
+          this.dialogVisible = false
+          this.getAllRouteTree()
+
+          const { name, description } = this.route
+          this.$notify({
+            title: isEdit ? '修改成功' : '添加成功',
+            dangerouslyUseHTMLString: true,
+            message: `
+              <div>名称: ${name}</div>
+              <div>描述: ${description}</div>
+            `,
+            type: 'success'
           })
         }
       })
     },
     async handleDelete({ row }) {
       console.log(row)
-      this.$confirm('确定删除这个菜单?', '警告', {
+      this.$confirm('确定删除这个路由?', '警告', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
