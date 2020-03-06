@@ -14,7 +14,7 @@
         </span>
         <el-input
           ref="username"
-          v-model="registerForm.username"
+          v-model.trim="registerForm.username"
           placeholder="用户名"
           name="username"
           type="text"
@@ -31,7 +31,7 @@
           <el-input
             :key="passwordType"
             ref="password"
-            v-model="registerForm.password"
+            v-model.trim="registerForm.password"
             :type="passwordType"
             placeholder="密码"
             name="password"
@@ -53,7 +53,7 @@
           <el-input
             :key="checkPasswordType"
             ref="checkPassword"
-            v-model="registerForm.checkPassword"
+            v-model.trim="registerForm.checkPassword"
             :type="checkPasswordType"
             placeholder="确认密码"
             name="checkPassword"

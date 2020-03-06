@@ -1,28 +1,16 @@
 <template>
   <div class="app-container">
-    <el-button type="primary" @click="handleAdd">创建定时任务</el-button>
+    <el-button class="filter-item" type="primary" @click="handleAdd">创建定时任务</el-button>
+    <div class="filter-item" style="float: right">
+      <el-input v-model="listQuery.keyword" class="filter-item" placeholder="请输入关键字" style="width: 200px;" @keyup.enter.native="getTaskPage" />
+      <el-button v-waves class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-search" @click="getTaskPage">查询</el-button>
+    </div>
 
     <el-table v-loading="listLoading" border :data="taskList" style="width: 100%;margin-top:30px;" @sort-change="sortChange">
-      <el-table-column align="center" label="id" prop="id" sortable width="60">
-        <template slot-scope="scope">
-          {{ scope.row.id }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="任务名称" prop="name" sortable width="220">
-        <template slot-scope="scope">
-          {{ scope.row.name }}
-        </template>
-      </el-table-column>
-      <el-table-column align="center" label="cron表达式" prop="cron" sortable width="220">
-        <template slot-scope="scope">
-          {{ scope.row.cron }}
-        </template>
-      </el-table-column>
-      <el-table-column align="header-center" prop="description" sortable label="描述">
-        <template slot-scope="scope">
-          {{ scope.row.description }}
-        </template>
-      </el-table-column>
+      <el-table-column align="center" label="id" prop="id" sortable width="60" />
+      <el-table-column align="center" label="任务名称" prop="name" sortable width="220" />
+      <el-table-column align="center" label="cron表达式" prop="cron" sortable width="220" />
+      <el-table-column align="header-center" prop="description" sortable label="描述" />
       <el-table-column align="center" label="是否启动" width="80">
         <template slot-scope="scope">
           <el-tag v-if="scope.row.open === true" type="success">是</el-tag>
@@ -42,8 +30,8 @@
 
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.current" :limit.sync="listQuery.size" @pagination="getTaskPage" />
 
-    <el-dialog v-loading="dialogLoading" :visible.sync="dialogVisible" :destroy-on-close="true" :title="dialogType==='new'?'创建定时任务':'编辑定时任务'">
-      <el-form ref="taskForm" :model="task" label-width="95px" label-position="right" :rules="rules">
+    <el-dialog :visible.sync="dialogVisible" :destroy-on-close="true" :title="dialogType==='new'?'创建定时任务':'编辑定时任务'">
+      <el-form ref="taskForm" v-loading="formLoading" :model="task" label-width="95px" label-position="right" :rules="rules">
         <el-row>
           <el-col :span="12">
             <el-form-item label="任务名称" prop="name">
@@ -108,13 +96,14 @@
       </el-form>
       <div style="text-align:right;">
         <el-button type="danger" @click="dialogVisible=false">取消</el-button>
-        <el-button v-loading="loading" type="primary" @click="dialogType==='new'?createData():updateData()">确定</el-button>
+        <el-button v-loading="confirmLoading" type="primary" @click="dialogType==='new'?createTask():updateTask()">确定</el-button>
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script>
+import waves from '@/directive/waves'
 import Pagination from '@/components/Pagination'
 import { getTaskPage, getTaskById, addTask, updateTask, deleteTask, runTask, startTask, stopTask } from '@/api/task'
 import { getBeanList, getBeanInfoByName } from '@/api/bean'
@@ -132,9 +121,8 @@ const defaultTask = {
 
 export default {
   name: 'Task',
-  components: {
-    Pagination
-  },
+  components: { Pagination },
+  directives: { waves },
   filters: {
     simplifyBeanName(value) {
       if (value) {
@@ -154,7 +142,7 @@ export default {
         keyword: '',
         orders: []
       },
-      loading: false,
+      confirmLoading: false,
       beanOptions: [],
       methodOptions: [],
       selectBeanInfo: null,
@@ -162,7 +150,7 @@ export default {
       task: Object.assign({}, defaultTask),
       taskList: [],
       dialogVisible: false,
-      dialogLoading: false,
+      formLoading: false,
       dialogType: 'new',
       rules: {
         name: [
@@ -239,20 +227,20 @@ export default {
       }
       return methodName + ')'
     },
-    getMethodOptions(value) {
-      getBeanInfoByName(value).then(res => {
-        this.selectBeanInfo = res.data
-        this.methodOptions = res.data.methods.map(item => {
-          return {
-            methodName: item.methodName,
-            methodSimpleName: this.toMethodSimpleName(item),
-            methodFullName: this.toMethodFullName(item),
-            paramTypes: item.paramTypes
-          }
-        })
+    async getMethodOptions(value) {
+      const res = await getBeanInfoByName(value)
+      this.selectBeanInfo = res.data
+      this.methodOptions = res.data.methods.map(item => {
+        return {
+          methodName: item.methodName,
+          methodSimpleName: this.toMethodSimpleName(item),
+          methodFullName: this.toMethodFullName(item),
+          paramTypes: item.paramTypes
+        }
       })
     },
     changeBean(value) {
+      console.log(value)
       this.methodParams = []
       if (this.dialogVisible) {
         this.task.methodName = ''
@@ -281,42 +269,39 @@ export default {
         }
       }
     },
+    async getBeanList() {
+      const res = await getBeanList()
+      this.beanOptions = res.data
+    },
     async handleAdd() {
-      this.task = {}
-      this.loading = false
-      this.dialogType = 'new'
       this.task = Object.assign({}, defaultTask)
-      await getBeanList().then(res => {
-        this.beanOptions = res.data
-      })
+      await this.getBeanList()
+      this.changeBean()
       this.dialogVisible = true
-      this.dialogLoading = false
+      this.formLoading = false
+      this.confirmLoading = false
+      this.dialogType = 'new'
     },
     async handleEdit(scope) {
-      this.task = {}
-      this.loading = false
+      this.confirmLoading = false
       this.dialogType = 'edit'
-      await getTaskById(scope.row.id).then(async res => {
-        this.task = res.data
-      })
-      await getBeanList().then(res => {
-        this.beanOptions = res.data
-      })
+      const res = await getTaskById(scope.row.id)
+      this.task = res.data
+
+      await this.getBeanList()
       this.getMethodOptions(this.task.beanName)
       this.methodParams = JSON.parse(this.task.paramInfo || '[]')
-      // this.changeBean(this.task.beanName)
-      // this.changeMethod(this.task.methodName)
+
       this.dialogVisible = true
-      this.dialogLoading = false
+      this.formLoading = false
     },
-    createData() {
+    createTask() {
       this.$refs.taskForm.validate(async valid => {
         if (valid) {
-          this.loading = true
+          this.confirmLoading = true
           this.task.paramInfo = JSON.stringify(this.methodParams)
-          await addTask(this.task).then(res => {
+          await addTask(this.task).then(() => {
             const { name, description } = this.task
-            this.dialogVisible = false
             this.$notify({
               title: '添加成功',
               dangerouslyUseHTMLString: true,
@@ -326,22 +311,21 @@ export default {
               `,
               type: 'success'
             })
-            this.loading = false
+            this.dialogVisible = false
             this.getTaskPage()
           }).catch(() => {
-            this.loading = false
+            this.confirmLoading = false
           })
         }
       })
     },
-    updateData() {
+    updateTask() {
       this.$refs.taskForm.validate(async valid => {
         if (valid) {
-          this.loading = true
+          this.confirmLoading = true
           this.task.paramInfo = JSON.stringify(this.methodParams)
-          await updateTask(this.task).then(res => {
+          await updateTask(this.task).then(() => {
             const { name, description } = this.task
-            this.dialogVisible = false
             this.$notify({
               title: '修改成功',
               dangerouslyUseHTMLString: true,
@@ -351,10 +335,11 @@ export default {
               `,
               type: 'success'
             })
-            this.loading = false
+            this.dialogVisible = false
+            this.confirmLoading = false
             this.getTaskPage()
           }).catch(() => {
-            this.loading = false
+            this.confirmLoading = false
           })
         }
       })

@@ -36,10 +36,10 @@
     <el-dialog :visible.sync="dialogVisible" :destroy-on-close="true" :title="dialogType==='new'?'创建用户':'编辑用户'" top="8vh">
       <el-form ref="userForm" v-loading="formLoading" :model="user" label-width="80px" label-position="left" :rules="rules">
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="user.username" :disabled="dialogType==='edit'" placeholder="用户名" autocomplete="new-password" />
+          <el-input v-model.trim="user.username" :disabled="dialogType==='edit'" placeholder="用户名" autocomplete="new-password" />
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input v-model="user.password" :placeholder="dialogType==='new'?'密码':'不输入则不进行修改'" show-password autocomplete="new-password" />
+          <el-input v-model.trim="user.password" :placeholder="dialogType==='new'?'密码':'不输入则不进行修改'" show-password autocomplete="new-password" />
         </el-form-item>
         <el-row>
           <el-col :span="12">
@@ -82,12 +82,12 @@
         <el-row>
           <el-col :span="12">
             <el-form-item label="地址">
-              <el-cascader size="large" v-model="selectedOptions" :options="areaOptions" />
+              <el-cascader v-model="user.addressCode" size="large" :options="areaOptions" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="详细地址">
-              <el-input placeholder="详细地址" />
+              <el-input v-model="detailedAddress" placeholder="详细地址" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -143,7 +143,7 @@
       </el-form>
       <div style="text-align:right;">
         <el-button type="danger" @click="dialogVisible=false">取消</el-button>
-        <el-button v-loading="confirmLoading" type="primary" @click="confirmUser">确定</el-button>
+        <el-button v-loading="confirmLoading" type="primary" @click="dialogType==='new'?createUser():updateUser()">确定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -151,12 +151,12 @@
 
 <script>
 import waves from '@/directive/waves'
+import Pagination from '@/components/Pagination'
+import { regionData } from 'element-china-area-data'
 import { getUserPage, getUserById, addUser, updateUser, deleteUser } from '@/api/user'
 import { checkUsername } from '@/api/register'
 import { validUsername } from '@/utils/validate'
 import { getAllRoleList } from '@/api/role'
-import Pagination from '@/components/Pagination'
-import { regionData } from 'element-china-area-data'
 
 const defaultUser = {
   id: '',
@@ -173,7 +173,8 @@ const defaultUser = {
   avatar: '',
   email: '',
   phoneNumber: '',
-  address: '',
+  addressCode: '',
+  detailedAddress: '',
   introduction: '',
   roleIds: []
 }
@@ -277,7 +278,9 @@ export default {
   methods: {
     async getUserPage() {
       this.listLoading = true
-      const res = await getUserPage(this.listQuery)
+      const res = await getUserPage(this.listQuery).catch(() => {
+        this.listLoading = false
+      })
       this.userList = res.data.records
       this.total = res.data.total
       this.listLoading = false
@@ -321,34 +324,50 @@ export default {
       this.confirmLoading = false
       this.dialogVisible = true
     },
-    confirmUser() {
-      console.log('12')
-      console.log(this.$refs.userForm)
+    createUser() {
       this.$refs.userForm.validate(async valid => {
-        console.log(valid)
         if (valid) {
           this.confirmLoading = true
-          const isEdit = this.dialogType === 'edit'
-
-          if (isEdit) {
-            await updateUser(this.user)
-          } else {
-            await addUser(this.user)
-          }
-
-          const { name, introduction } = this.user
-          this.dialogVisible = false
-          this.confirmLoading = false
-          this.getUserPage()
-
-          this.$notify({
-            title: isEdit ? '修改成功' : '添加成功',
-            dangerouslyUseHTMLString: true,
-            message: `
+          await addUser(this.user).then(() => {
+            const { name, introduction } = this.user
+            this.$notify({
+              title: '添加成功',
+              dangerouslyUseHTMLString: true,
+              message: `
               <div>名称: ${name}</div>
               <div>个人简介：${introduction}</div>
             `,
-            type: 'success'
+              type: 'success'
+            })
+            this.dialogVisible = false
+            this.confirmLoading = false
+            this.getUserPage()
+          }).catch(() => {
+            this.confirmLoading = false
+          })
+        }
+      })
+    },
+    updateUser() {
+      this.$refs.userForm.validate(async valid => {
+        if (valid) {
+          this.confirmLoading = true
+          await updateUser(this.user).then(() => {
+            const { name, introduction } = this.user
+            this.$notify({
+              title: '修改成功',
+              dangerouslyUseHTMLString: true,
+              message: `
+              <div>名称: ${name}</div>
+              <div>个人简介：${introduction}</div>
+            `,
+              type: 'success'
+            })
+            this.dialogVisible = false
+            this.confirmLoading = false
+            this.getUserPage()
+          }).catch(() => {
+            this.confirmLoading = false
           })
         }
       })

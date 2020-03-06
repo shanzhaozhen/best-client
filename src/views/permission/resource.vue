@@ -105,7 +105,7 @@
       </el-form>
       <div style="text-align:right;">
         <el-button type="danger" @click="dialogVisible=false">取消</el-button>
-        <el-button :loading="confirmLoading" type="primary" @click="confirmResource">确定</el-button>
+        <el-button :loading="confirmLoading" type="primary" @click="dialogType==='new'?createResource():updateResource()">确定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -174,7 +174,9 @@ export default {
   methods: {
     async getAllResourceTree() {
       this.listLoading = true
-      const res = await getAllResourceTree()
+      const res = await getAllResourceTree().catch(() => {
+        this.listLoading = false
+      })
       this.resourceList = res.data
       this.listLoading = false
     },
@@ -210,33 +212,51 @@ export default {
       this.confirmLoading = false
       this.dialogVisible = true
     },
-    confirmResource() {
+    createResource() {
       this.$refs.resourceForm.validate(async valid => {
         if (valid) {
           this.confirmLoading = true
-          const isEdit = this.dialogType === 'edit'
-
-          if (isEdit) {
-            await updateResource(this.resource)
-          } else {
-            await addResource(this.resource)
-          }
-
-          this.dialogVisible = false
-          this.confirmLoading = false
-
-          const { name, description } = this.resource
-          this.$notify({
-            title: isEdit ? '修改成功' : '添加成功',
-            dangerouslyUseHTMLString: true,
-            message: `
+          await addResource(this.resource).then(() => {
+            const { name, description } = this.resource
+            this.$notify({
+              title: '添加成功',
+              dangerouslyUseHTMLString: true,
+              message: `
               <div>名称: ${name}</div>
               <div>描述: ${description}</div>
             `,
-            type: 'success'
+              type: 'success'
+            })
+            this.dialogVisible = false
+            this.confirmLoading = false
+            this.getAllResourceTree()
+          }).catch(() => {
+            this.confirmLoading = false
           })
-          this.confirmLoading = false
-          this.getAllResourceTree()
+        }
+      })
+    },
+    updateResource() {
+      this.$refs.resourceForm.validate(async valid => {
+        if (valid) {
+          this.confirmLoading = true
+          await updateResource(this.resource).then(() => {
+            const { name, description } = this.resource
+            this.$notify({
+              title: '修改成功',
+              dangerouslyUseHTMLString: true,
+              message: `
+              <div>名称: ${name}</div>
+              <div>描述: ${description}</div>
+            `,
+              type: 'success'
+            })
+            this.dialogVisible = false
+            this.confirmLoading = false
+            this.getAllResourceTree()
+          }).catch(() => {
+            this.confirmLoading = false
+          })
         }
       })
     },

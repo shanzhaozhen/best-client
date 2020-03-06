@@ -144,7 +144,7 @@
       </el-form>
       <div style="text-align:right;">
         <el-button type="danger" @click="dialogVisible=false">取消</el-button>
-        <el-button :loading="confirmLoading" type="primary" @click="confirmRoute">确定</el-button>
+        <el-button :loading="confirmLoading" type="primary" @click="dialogType==='new'?createRoute():updateRoute()">确定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -226,7 +226,9 @@ export default {
   methods: {
     async getAllRouteTree() {
       this.listLoading = true
-      const res = await getAllRouteTree()
+      const res = await getAllRouteTree().catch(() => {
+        this.listLoading = false
+      })
       this.routeList = res.data
       this.listLoading = false
     },
@@ -258,31 +260,50 @@ export default {
       this.confirmLoading = false
       this.dialogVisible = true
     },
-    confirmRoute() {
+    createRoute() {
       this.$refs.routeForm.validate(async valid => {
         if (valid) {
           this.confirmLoading = true
-          const isEdit = this.dialogType === 'edit'
-
-          if (isEdit) {
-            await updateRoute(this.route)
-          } else {
-            await addRoute(this.role)
-          }
-
-          this.confirmLoading = false
-          this.dialogVisible = false
-          this.getAllRouteTree()
-
-          const { name, description } = this.route
-          this.$notify({
-            title: isEdit ? '修改成功' : '添加成功',
-            dangerouslyUseHTMLString: true,
-            message: `
+          await addRoute(this.role).then(() => {
+            const { name, description } = this.route
+            this.$notify({
+              title: '添加成功',
+              dangerouslyUseHTMLString: true,
+              message: `
               <div>名称: ${name}</div>
               <div>描述: ${description}</div>
             `,
-            type: 'success'
+              type: 'success'
+            })
+            this.dialogVisible = false
+            this.confirmLoading = false
+            this.getAllRouteTree()
+          }).catch(() => {
+            this.confirmLoading = false
+          })
+        }
+      })
+    },
+    updateRoute() {
+      this.$refs.routeForm.validate(async valid => {
+        if (valid) {
+          this.confirmLoading = true
+          await updateRoute(this.role).then(() => {
+            const { name, description } = this.route
+            this.$notify({
+              title: '修改成功',
+              dangerouslyUseHTMLString: true,
+              message: `
+              <div>名称: ${name}</div>
+              <div>描述: ${description}</div>
+            `,
+              type: 'success'
+            })
+            this.dialogVisible = false
+            this.confirmLoading = false
+            this.getAllRouteTree()
+          }).catch(() => {
+            this.confirmLoading = false
           })
         }
       })

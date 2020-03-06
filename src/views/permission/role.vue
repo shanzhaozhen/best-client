@@ -63,7 +63,7 @@
       </el-form>
       <div style="text-align:right;">
         <el-button type="danger" @click="dialogVisible=false">取消</el-button>
-        <el-button v-loading="confirmLoading" type="primary" @click="confirmRole">确定</el-button>
+        <el-button v-loading="confirmLoading" type="primary" @click="dialogType==='new'?createRole():updateRole()">确定</el-button>
       </div>
     </el-dialog>
   </div>
@@ -71,10 +71,10 @@
 
 <script>
 import waves from '@/directive/waves'
+import Pagination from '@/components/Pagination' // 分页模块
 import { getRolePage, getRoleById, addRole, updateRole, deleteRole } from '@/api/role'
 import { getAllRouteTree } from '@/api/route'
-import Pagination from '@/components/Pagination'
-import { getAllResourceTree } from '@/api/resource' // 分页模块
+import { getAllResourceTree } from '@/api/resource'
 
 const defaultRole = {
   id: '',
@@ -132,7 +132,9 @@ export default {
   methods: {
     async getRolePage() {
       this.listLoading = true
-      const res = await getRolePage(this.listQuery)
+      const res = await getRolePage(this.listQuery).catch(() => {
+        this.listLoading = false
+      })
       this.roleList = res.data.records
       this.total = res.data.total
       this.listLoading = false
@@ -193,35 +195,60 @@ export default {
       })
       this.formLoading = false
     },
-    async confirmRole() {
+    createRole() {
       this.$refs.roleForm.validate(async valid => {
         if (valid) {
           this.confirmLoading = true
-          const isEdit = this.dialogType === 'edit'
 
           this.role.routeIds = this.$refs.routeTree.getCheckedKeys()
           this.role.resourceIds = this.$refs.resourceTree.getCheckedKeys()
 
-          if (isEdit) {
-            await updateRole(this.role)
-          } else {
-            await addRole(this.role)
-          }
-
-          this.confirmLoading = false
-          this.dialogVisible = false
-          this.getRolePage()
-
-          const { name, identification, description } = this.role
-          this.$notify({
-            title: isEdit ? '修改成功' : '添加成功',
-            dangerouslyUseHTMLString: true,
-            message: `
+          await addRole(this.role).then(() => {
+            const { name, identification, description } = this.role
+            this.$notify({
+              title: '添加成功',
+              dangerouslyUseHTMLString: true,
+              message: `
                 <div>名称: ${name}</div>
                 <div>标识名称：${identification}</div>
                 <div>描述: ${description}</div>
               `,
-            type: 'success'
+              type: 'success'
+            })
+            this.dialogVisible = false
+            this.confirmLoading = false
+            this.getRolePage()
+          }).catch(() => {
+            this.confirmLoading = false
+          })
+        }
+      })
+    },
+    updateRole() {
+      this.$refs.roleForm.validate(async valid => {
+        if (valid) {
+          this.confirmLoading = true
+
+          this.role.routeIds = this.$refs.routeTree.getCheckedKeys()
+          this.role.resourceIds = this.$refs.resourceTree.getCheckedKeys()
+
+          await updateRole(this.role).then(() => {
+            const { name, identification, description } = this.role
+            this.$notify({
+              title: '修改成功',
+              dangerouslyUseHTMLString: true,
+              message: `
+                <div>名称: ${name}</div>
+                <div>标识名称：${identification}</div>
+                <div>描述: ${description}</div>
+              `,
+              type: 'success'
+            })
+            this.dialogVisible = false
+            this.confirmLoading = false
+            this.getRolePage()
+          }).catch(() => {
+            this.confirmLoading = false
           })
         }
       })

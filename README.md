@@ -13,7 +13,7 @@ JWT验证登陆 | √
 RABC动态权限管理 | √
 动态分配菜单 | √
 Swagger2-api文档查看、导出 | √
-动态配置定时任务 | -
+动态配置定时任务 | √
 
 
 
@@ -26,3 +26,4 @@ Swagger2-api文档查看、导出 | √
 * JWT
 * Druid
 * Vue
+* Redis

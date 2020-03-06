@@ -118,6 +118,10 @@ export const allRoutes = {
     name: 'ScheduledTask',
     component: () => import('@/views/system-config/task')
   },
+  'RegionConfig': {
+    name: 'RegionConfig',
+    component: () => import('@/views/system-config/region')
+  },
   'Iframe': {
     name: 'Iframe',
     component: Layout
