@@ -95,10 +95,10 @@ export default {
       },
       rules: {
         name: [
-          { required: true, message: '请输入区域信息名称', trigger: 'blur' }
+          { required: true, message: '请输入区域名称', trigger: 'blur' }
         ],
-        identification: [
-          { required: true, message: '请输入标识名称', trigger: 'blur' }
+        code: [
+          { required: true, message: '请输入区域编码', trigger: 'blur' }
         ]
       }
     }

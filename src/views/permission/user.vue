@@ -87,7 +87,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="详细地址">
-              <el-input v-model="detailedAddress" placeholder="详细地址" />
+              <el-input v-model="user.detailedAddress" placeholder="详细地址" />
             </el-form-item>
           </el-col>
         </el-row>
