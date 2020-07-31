@@ -1,21 +1,28 @@
 <template>
   <div class="login-container">
-    <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" autocomplete="on" label-position="left">
-
+    <el-form
+      ref="loginForm"
+      :model="loginForm"
+      :rules="loginRules"
+      class="login-form"
+      autocomplete="on"
+      label-position="left"
+    >
       <div class="title-container">
-        <h3 class="title">系统登陆</h3>
+        <h3 class="title">
+          {{ $t('login.title') }}
+        </h3>
+        <lang-select class="set-language" />
       </div>
-      <div class="register-container">
-        <router-link to="/register">没有账号？</router-link>
-      </div>
+
       <el-form-item prop="username">
         <span class="svg-container">
-          <svg-icon icon-class="user" />
+          <svg-icon name="user" />
         </span>
         <el-input
           ref="username"
-          v-model.trim="loginForm.username"
-          placeholder="用户名"
+          v-model="loginForm.username"
+          :placeholder="$t('login.username')"
           name="username"
           type="text"
           tabindex="1"
@@ -23,17 +30,22 @@
         />
       </el-form-item>
 
-      <el-tooltip v-model="capsTooltip" content="大写锁定已打开" placement="right" manual>
+      <el-tooltip
+        v-model="capsTooltip"
+        content="Caps lock is On"
+        placement="right"
+        manual
+      >
         <el-form-item prop="password">
           <span class="svg-container">
-            <svg-icon icon-class="password" />
+            <svg-icon name="password" />
           </span>
           <el-input
             :key="passwordType"
             ref="password"
-            v-model.trim="loginForm.password"
+            v-model="loginForm.password"
             :type="passwordType"
-            placeholder="密码"
+            :placeholder="$t('login.password')"
             name="password"
             tabindex="2"
             autocomplete="on"
@@ -41,23 +53,49 @@
             @blur="capsTooltip = false"
             @keyup.enter.native="handleLogin"
           />
-          <span class="show-pwd" @click="showPwd">
-            <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
+          <span
+            class="show-pwd"
+            @click="showPwd"
+          >
+            <svg-icon :name="passwordType === 'password' ? 'eye-off' : 'eye-on'" />
           </span>
         </el-form-item>
       </el-tooltip>
 
-      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">登陆</el-button>
+      <el-button
+        :loading="loading"
+        type="primary"
+        style="width:100%; margin-bottom:30px;"
+        @click.native.prevent="handleLogin"
+      >
+        {{ $t('login.logIn') }}
+      </el-button>
 
-      <div style="position:relative; height: 48px">
-        <el-button class="thirdparty-button" type="primary" @click="showDialog=true">
-          第三方登陆
+      <div style="position:relative">
+        <div class="tips">
+          <span>{{ $t('login.username') }} : admin </span>
+          <span>{{ $t('login.password') }} : {{ $t('login.any') }} </span>
+        </div>
+        <div class="tips">
+          <span>{{ $t('login.username') }} : editor </span>
+          <span>{{ $t('login.password') }} : {{ $t('login.any') }} </span>
+        </div>
+
+        <el-button
+          class="thirdparty-button"
+          type="primary"
+          @click="showDialog=true"
+        >
+          {{ $t('login.thirdparty') }}
         </el-button>
       </div>
     </el-form>
 
-    <el-dialog title="第三方登陆" :visible.sync="showDialog">
-      Can not be simulated on local, so please combine you own business simulation! ! !
+    <el-dialog
+      :title="$t('login.thirdparty')"
+      :visible.sync="showDialog"
+    >
+      {{ $t('login.thirdpartyTips') }}
       <br>
       <br>
       <br>
@@ -66,151 +104,131 @@
   </div>
 </template>
 
-<script>
-import SocialSign from './components/SocialSignin'
+<script lang="ts">
+import { Component, Vue, Watch } from 'vue-property-decorator'
+import { Route } from 'vue-router'
+import { Dictionary } from 'vue-router/types/router'
+import { Form as ElForm, Input } from 'element-ui'
+import { UserModule } from '@/store/modules/user'
+import { isValidUsername } from '@/utils/validate'
+import LangSelect from '@/components/LangSelect/index.vue'
+import SocialSign from './components/SocialSignin.vue'
 
-export default {
+@Component({
   name: 'Login',
-  components: { SocialSign },
-  data() {
-    const validatePassword = (rule, value, callback) => {
-      if (value.length < 6) {
-        callback(new Error('密码不能少于6位数'))
-      } else {
-        callback()
-      }
+  components: {
+    LangSelect,
+    SocialSign
+  }
+})
+export default class extends Vue {
+  private validateUsername = (rule: any, value: string, callback: Function) => {
+    if (!isValidUsername(value)) {
+      callback(new Error('Please enter the correct user name'))
+    } else {
+      callback()
     }
-    return {
-      loginForm: {
-        username: '',
-        password: ''
-      },
-      loginRules: {
-        username: [
-          { required: true, message: '用户名不能为空', trigger: 'blur' },
-          { min: 4, max: 20, message: '长度在 4 到 20 个字符', trigger: 'blur' }
-        ],
-        password: [{ required: true, trigger: 'blur', validator: validatePassword }]
-      },
-      passwordType: 'password',
-      capsTooltip: false,
-      loading: false,
-      showDialog: false,
-      redirect: undefined,
-      otherQuery: {}
+  }
+
+  private validatePassword = (rule: any, value: string, callback: Function) => {
+    if (value.length < 6) {
+      callback(new Error('The password can not be less than 6 digits'))
+    } else {
+      callback()
     }
-  },
-  watch: {
-    $route: {
-      handler: function(route) {
-        const query = route.query
-        if (query) {
-          this.redirect = query.redirect
-          this.otherQuery = this.getOtherQuery(query)
-        }
-      },
-      immediate: true
+  }
+
+  private loginForm = {
+    username: 'admin',
+    password: '111111'
+  }
+
+  private loginRules = {
+    username: [{ validator: this.validateUsername, trigger: 'blur' }],
+    password: [{ validator: this.validatePassword, trigger: 'blur' }]
+  }
+
+  private passwordType = 'password'
+  private loading = false
+  private showDialog = false
+  private capsTooltip = false
+  private redirect?: string
+  private otherQuery: Dictionary<string> = {}
+
+  @Watch('$route', { immediate: true })
+  private onRouteChange(route: Route) {
+    // TODO: remove the "as Dictionary<string>" hack after v4 release for vue-router
+    // See https://github.com/vuejs/vue-router/pull/2050 for details
+    const query = route.query as Dictionary<string>
+    if (query) {
+      this.redirect = query.redirect
+      this.otherQuery = this.getOtherQuery(query)
     }
-  },
-  created() {
-    // window.addEventListener('storage', this.afterQRScan)
-  },
+  }
+
   mounted() {
     if (this.loginForm.username === '') {
-      this.$refs.username.focus()
+      (this.$refs.username as Input).focus()
     } else if (this.loginForm.password === '') {
-      this.$refs.password.focus()
+      (this.$refs.password as Input).focus()
     }
-  },
-  destroyed() {
-    // window.removeEventListener('storage', this.afterQRScan)
-  },
-  methods: {
-    checkCapslock({ shiftKey, key } = {}) {
-      if (key && key.length === 1) {
-        if (shiftKey && (key >= 'a' && key <= 'z') || !shiftKey && (key >= 'A' && key <= 'Z')) {
-          this.capsTooltip = true
-        } else {
-          this.capsTooltip = false
-        }
-      }
-      if (key === 'CapsLock' && this.capsTooltip === true) {
-        this.capsTooltip = false
-      }
-    },
-    showPwd() {
-      if (this.passwordType === 'password') {
-        this.passwordType = ''
+  }
+
+  private checkCapslock(e: KeyboardEvent) {
+    const { key } = e
+    this.capsTooltip = key !== null && key.length === 1 && (key >= 'A' && key <= 'Z')
+  }
+
+  private showPwd() {
+    if (this.passwordType === 'password') {
+      this.passwordType = ''
+    } else {
+      this.passwordType = 'password'
+    }
+    this.$nextTick(() => {
+      (this.$refs.password as Input).focus()
+    })
+  }
+
+  private handleLogin() {
+    (this.$refs.loginForm as ElForm).validate(async(valid: boolean) => {
+      if (valid) {
+        this.loading = true
+        await UserModule.Login(this.loginForm)
+        this.$router.push({
+          path: this.redirect || '/',
+          query: this.otherQuery
+        })
+        // Just to simulate the time of the request
+        setTimeout(() => {
+          this.loading = false
+        }, 0.5 * 1000)
       } else {
-        this.passwordType = 'password'
+        return false
       }
-      this.$nextTick(() => {
-        this.$refs.password.focus()
-      })
-    },
-    handleLogin() {
-      this.$refs.loginForm.validate(valid => {
-        if (valid) {
-          this.loading = true
-          this.$store.dispatch('user/login', this.loginForm)
-            .then(() => {
-              this.$router.push({ path: this.redirect || '/', query: this.otherQuery })
-              this.loading = false
-            })
-            .catch(() => {
-              this.loading = false
-            })
-        } else {
-          console.log('提交失败!!')
-          return false
-        }
-      })
-    },
-    getOtherQuery(query) {
-      return Object.keys(query).reduce((acc, cur) => {
-        if (cur !== 'redirect') {
-          acc[cur] = query[cur]
-        }
-        return acc
-      }, {})
-    }
-    // afterQRScan() {
-    //   if (e.key === 'x-admin-oauth-code') {
-    //     const code = getQueryObject(e.newValue)
-    //     const codeMap = {
-    //       wechat: 'code',
-    //       tencent: 'code'
-    //     }
-    //     const type = codeMap[this.auth_type]
-    //     const codeName = code[type]
-    //     if (codeName) {
-    //       this.$store.dispatch('LoginByThirdparty', codeName).then(() => {
-    //         this.$router.push({ path: this.redirect || '/' })
-    //       })
-    //     } else {
-    //       alert('第三方登录失败')
-    //     }
-    //   }
-    // }
+    })
+  }
+
+  private getOtherQuery(query: Dictionary<string>) {
+    return Object.keys(query).reduce((acc, cur) => {
+      if (cur !== 'redirect') {
+        acc[cur] = query[cur]
+      }
+      return acc
+    }, {} as Dictionary<string>)
   }
 }
 </script>
 
 <style lang="scss">
-/* 修复input 背景不协调 和光标变色 */
-/* Detail see https://github.com/PanJiaChen/vue-element-admin/pull/927 */
-
-$bg:#283443;
-$light_gray:#fff;
-$cursor: #fff;
-
-@supports (-webkit-mask: none) and (not (cater-color: $cursor)) {
-  .login-container .el-input input {
-    color: $cursor;
+// References: https://www.zhangxinxu.com/wordpress/2018/01/css-caret-color-first-line/
+@supports (-webkit-mask: none) and (not (cater-color: $loginCursorColor)) {
+  .login-container .el-input {
+    input { color: $loginCursorColor; }
+    input::first-line { color: $lightGray; }
   }
 }
 
-/* reset element-ui css */
 .login-container {
   .el-input {
     display: inline-block;
@@ -218,18 +236,18 @@ $cursor: #fff;
     width: 85%;
 
     input {
+      height: 47px;
       background: transparent;
       border: 0px;
-      -webkit-appearance: none;
       border-radius: 0px;
       padding: 12px 5px 12px 15px;
-      color: $light_gray;
-      height: 47px;
-      caret-color: $cursor;
+      color: $lightGray;
+      caret-color: $loginCursorColor;
+      -webkit-appearance: none;
 
       &:-webkit-autofill {
-        box-shadow: 0 0 0px 1000px $bg inset !important;
-        -webkit-text-fill-color: $cursor !important;
+        box-shadow: 0 0 0px 1000px $loginBg inset !important;
+        -webkit-text-fill-color: #fff !important;
       }
     }
   }
@@ -244,15 +262,11 @@ $cursor: #fff;
 </style>
 
 <style lang="scss" scoped>
-$bg:#2d3a4b;
-$dark_gray:#889aa4;
-$light_gray:#eee;
-
 .login-container {
-  min-height: 100%;
+  height: 100%;
   width: 100%;
-  background-color: $bg;
   overflow: hidden;
+  background-color: $loginBg;
 
   .login-form {
     position: relative;
@@ -277,7 +291,7 @@ $light_gray:#eee;
 
   .svg-container {
     padding: 6px 5px 6px 15px;
-    color: $dark_gray;
+    color: $darkGray;
     vertical-align: middle;
     width: 30px;
     display: inline-block;
@@ -288,18 +302,20 @@ $light_gray:#eee;
 
     .title {
       font-size: 26px;
-      color: $light_gray;
-      margin: 0px auto 18px auto;
+      color: $lightGray;
+      margin: 0px auto 40px auto;
       text-align: center;
       font-weight: bold;
     }
-  }
 
-  .register-container {
-    text-align: right;
-    font-size: 16px;
-    color: #999;
-    margin-bottom: 6px;
+    .set-language {
+      color: #fff;
+      position: absolute;
+      top: 3px;
+      font-size: 18px;
+      right: 0px;
+      cursor: pointer;
+    }
   }
 
   .show-pwd {
@@ -307,7 +323,7 @@ $light_gray:#eee;
     right: 10px;
     top: 7px;
     font-size: 16px;
-    color: $dark_gray;
+    color: $darkGray;
     cursor: pointer;
     user-select: none;
   }

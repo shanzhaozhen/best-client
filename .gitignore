@@ -2,6 +2,10 @@
 node_modules
 /dist
 
+/tests/e2e/videos/
+/tests/e2e/screenshots/
+/tests/**/coverage/
+
 # local env files
 .env.local
 .env.*.local
@@ -14,11 +18,10 @@ yarn-error.log*
 # Editor directories and files
 .idea
 .vscode
+.history
+.ionide
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
-
-package-lock.json
-yarn.lock
+*.sw*

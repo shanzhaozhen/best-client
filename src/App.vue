@@ -1,18 +1,19 @@
 <template>
   <div id="app">
     <router-view />
+    <service-worker-update-popup />
   </div>
 </template>
 
-<script>
-export default {
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+import ServiceWorkerUpdatePopup from '@/pwa/components/ServiceWorkerUpdatePopup.vue'
+
+@Component({
   name: 'App',
-  created() {
-    // console.log('process.env:<')
-    // console.log(process.env)
-    // console.log('>')
-    // console.log('PORT:' + process.env.PORT)
-    // console.log('port:' + process.env.port)
+  components: {
+    ServiceWorkerUpdatePopup
   }
-}
+})
+export default class extends Vue {}
 </script>

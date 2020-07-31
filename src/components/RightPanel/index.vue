@@ -1,8 +1,16 @@
 <template>
-  <div ref="rightPanel" :class="{show:show}" class="rightPanel-container">
+  <div
+    ref="rightPanel"
+    :class="{show: show}"
+    class="rightPanel-container"
+  >
     <div class="rightPanel-background" />
     <div class="rightPanel">
-      <div class="handle-button" :style="{'top':buttonTop+'px','background-color':theme}" @click="show=!show">
+      <div
+        class="handle-button"
+        :style="{'top': buttonTop+'px','background-color': theme}"
+        @click="show=!show"
+      >
         <i :class="show?'el-icon-close':'el-icon-setting'" />
       </div>
       <div class="rightPanel-items">
@@ -12,71 +20,68 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator'
 import { addClass, removeClass } from '@/utils'
+import { SettingsModule } from '@/store/modules/settings'
 
-export default {
-  name: 'RightPanel',
-  props: {
-    clickNotClose: {
-      default: false,
-      type: Boolean
-    },
-    buttonTop: {
-      default: 250,
-      type: Number
+@Component({
+  name: 'RightPanel'
+})
+export default class extends Vue {
+  @Prop({ default: false }) private clickNotClose!: boolean
+  @Prop({ default: 250 }) private buttonTop!: number
+
+  private show = false
+
+  get theme() {
+    return SettingsModule.theme
+  }
+
+  @Watch('show')
+  private onShowChange(value: boolean) {
+    if (value && !this.clickNotClose) {
+      this.addEventClick()
     }
-  },
-  data() {
-    return {
-      show: false
+    if (value) {
+      addClass(document.body, 'showRightPanel')
+    } else {
+      removeClass(document.body, 'showRightPanel')
     }
-  },
-  computed: {
-    theme() {
-      return this.$store.state.settings.theme
-    }
-  },
-  watch: {
-    show(value) {
-      if (value && !this.clickNotClose) {
-        this.addEventClick()
-      }
-      if (value) {
-        addClass(document.body, 'showRightPanel')
-      } else {
-        removeClass(document.body, 'showRightPanel')
-      }
-    }
-  },
+  }
+
   mounted() {
     this.insertToBody()
-  },
+  }
+
   beforeDestroy() {
-    const elx = this.$refs.rightPanel
+    const elx = this.$refs.rightPanel as Element
     elx.remove()
-  },
-  methods: {
-    addEventClick() {
-      window.addEventListener('click', this.closeSidebar)
-    },
-    closeSidebar(evt) {
-      const parent = evt.target.closest('.rightPanel')
-      if (!parent) {
-        this.show = false
-        window.removeEventListener('click', this.closeSidebar)
-      }
-    },
-    insertToBody() {
-      const elx = this.$refs.rightPanel
-      const body = document.querySelector('body')
+  }
+
+  private addEventClick() {
+    window.addEventListener('click', this.closeSidebar)
+  }
+
+  private closeSidebar(ev: MouseEvent) {
+    const parent = (ev.target as HTMLElement).closest('.rightPanel')
+    if (!parent) {
+      this.show = false
+      window.removeEventListener('click', this.closeSidebar)
+    }
+  }
+
+  private insertToBody() {
+    const elx = this.$refs.rightPanel as Element
+    const body = document.querySelector('body')
+    if (body) {
       body.insertBefore(elx, body.firstChild)
     }
   }
 }
 </script>
 
-<style>
+<style lang="scss">
 .showRightPanel {
   overflow: hidden;
   position: relative;
@@ -133,10 +138,11 @@ export default {
   font-size: 24px;
   border-radius: 6px 0 0 6px !important;
   z-index: 0;
-  pointer-events: auto;
   cursor: pointer;
+  pointer-events: auto;
   color: #fff;
   line-height: 48px;
+
   i {
     font-size: 24px;
     line-height: 48px;

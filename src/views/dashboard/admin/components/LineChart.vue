@@ -1,67 +1,56 @@
 <template>
-  <div :class="className" :style="{height:height,width:width}" />
+  <div
+    :class="className"
+    :style="{height: height, width: width}"
+  />
 </template>
 
-<script>
-import echarts from 'echarts'
-require('echarts/theme/macarons') // echarts theme
-import resize from './mixins/resize'
+<script lang="ts">
+import echarts, { EChartOption } from 'echarts'
+import { Component, Prop, Watch } from 'vue-property-decorator'
+import { mixins } from 'vue-class-component'
+import ResizeMixin from '@/components/Charts/mixins/resize'
 
-export default {
-  mixins: [resize],
-  props: {
-    className: {
-      type: String,
-      default: 'chart'
-    },
-    width: {
-      type: String,
-      default: '100%'
-    },
-    height: {
-      type: String,
-      default: '350px'
-    },
-    autoResize: {
-      type: Boolean,
-      default: true
-    },
-    chartData: {
-      type: Object,
-      required: true
-    }
-  },
-  data() {
-    return {
-      chart: null
-    }
-  },
-  watch: {
-    chartData: {
-      deep: true,
-      handler(val) {
-        this.setOptions(val)
-      }
-    }
-  },
+export interface ILineChartData {
+  expectedData: number[]
+  actualData: number[]
+}
+
+@Component({
+  name: 'LineChart'
+})
+export default class extends mixins(ResizeMixin) {
+  @Prop({ required: true }) private chartData!: ILineChartData
+  @Prop({ default: 'chart' }) private className!: string
+  @Prop({ default: '100%' }) private width!: string
+  @Prop({ default: '350px' }) private height!: string
+
+  @Watch('chartData', { deep: true })
+  private onChartDataChange(value: ILineChartData) {
+    this.setOptions(value)
+  }
+
   mounted() {
     this.$nextTick(() => {
       this.initChart()
     })
-  },
+  }
+
   beforeDestroy() {
     if (!this.chart) {
       return
     }
     this.chart.dispose()
     this.chart = null
-  },
-  methods: {
-    initChart() {
-      this.chart = echarts.init(this.$el, 'macarons')
-      this.setOptions(this.chartData)
-    },
-    setOptions({ expectedData, actualData } = {}) {
+  }
+
+  private initChart() {
+    this.chart = echarts.init(this.$el as HTMLDivElement, 'macarons')
+    this.setOptions(this.chartData)
+  }
+
+  private setOptions(chartData: ILineChartData) {
+    if (this.chart) {
       this.chart.setOption({
         xAxis: {
           data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
@@ -82,7 +71,7 @@ export default {
           axisPointer: {
             type: 'cross'
           },
-          padding: [5, 10]
+          padding: 8
         },
         yAxis: {
           axisTick: {
@@ -93,18 +82,17 @@ export default {
           data: ['expected', 'actual']
         },
         series: [{
-          name: 'expected', itemStyle: {
-            normal: {
+          name: 'expected',
+          itemStyle: {
+            color: '#FF005A',
+            lineStyle: {
               color: '#FF005A',
-              lineStyle: {
-                color: '#FF005A',
-                width: 2
-              }
+              width: 2
             }
           },
           smooth: true,
           type: 'line',
-          data: expectedData,
+          data: chartData.expectedData,
           animationDuration: 2800,
           animationEasing: 'cubicInOut'
         },
@@ -113,22 +101,20 @@ export default {
           smooth: true,
           type: 'line',
           itemStyle: {
-            normal: {
+            color: '#3888fa',
+            lineStyle: {
               color: '#3888fa',
-              lineStyle: {
-                color: '#3888fa',
-                width: 2
-              },
-              areaStyle: {
-                color: '#f3f8ff'
-              }
+              width: 2
+            },
+            areaStyle: {
+              color: '#f3f8ff'
             }
           },
-          data: actualData,
+          data: chartData.actualData,
           animationDuration: 2800,
           animationEasing: 'quadraticOut'
         }]
-      })
+      } as EChartOption<EChartOption.SeriesLine>)
     }
   }
 }

@@ -4,30 +4,29 @@
   </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
-import adminDashboard from './admin'
-import editorDashboard from './editor'
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+import { UserModule } from '@/store/modules/user'
+import AdminDashboard from './admin/index.vue'
+import EditorDashboard from './editor/index.vue'
 
-export default {
+@Component({
   name: 'Dashboard',
-  components: { adminDashboard, editorDashboard },
-  data() {
-    return {
-      currentRole: 'adminDashboard'
-    }
-  },
-  computed: {
-    ...mapGetters([
-      'roles'
-    ])
-  },
+  components: {
+    AdminDashboard,
+    EditorDashboard
+  }
+})
+export default class extends Vue {
+  private currentRole = 'admin-dashboard'
+
+  get roles() {
+    return UserModule.roles
+  }
+
   created() {
-    if (this.roles && this.roles.length > 0) {
-      const roleIdentifications = this.roles.map(res => res.identification)
-      if (!roleIdentifications.includes('admin') && !roleIdentifications.includes('developer')) {
-        this.currentRole = 'editorDashboard'
-      }
+    if (!this.roles.includes('admin')) {
+      this.currentRole = 'editor-dashboard'
     }
   }
 }

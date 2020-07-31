@@ -1,82 +1,99 @@
 <template>
   <div class="drawer-container">
     <div>
-      <h3 class="drawer-title">Page style setting</h3>
+      <h3 class="drawer-title">
+        {{ $t('settings.title') }}
+      </h3>
 
       <div class="drawer-item">
-        <span>Theme Color</span>
-        <theme-picker style="float: right;height: 26px;margin: -3px 8px 0 0;" @change="themeChange" />
+        <span>{{ $t('settings.theme') }}</span>
+        <theme-picker
+          style="float: right;height: 26px;margin: -3px 8px 0 0;"
+          @change="themeChange"
+        />
       </div>
 
       <div class="drawer-item">
-        <span>Open Tags-View</span>
-        <el-switch v-model="tagsView" class="drawer-switch" />
+        <span>{{ $t('settings.showTagsView') }}</span>
+        <el-switch
+          v-model="showTagsView"
+          class="drawer-switch"
+        />
       </div>
 
       <div class="drawer-item">
-        <span>Fixed Header</span>
-        <el-switch v-model="fixedHeader" class="drawer-switch" />
+        <span>{{ $t('settings.showSidebarLogo') }}</span>
+        <el-switch
+          v-model="showSidebarLogo"
+          class="drawer-switch"
+        />
       </div>
 
       <div class="drawer-item">
-        <span>Sidebar Logo</span>
-        <el-switch v-model="sidebarLogo" class="drawer-switch" />
+        <span>{{ $t('settings.fixedHeader') }}</span>
+        <el-switch
+          v-model="fixedHeader"
+          class="drawer-switch"
+        />
       </div>
 
+      <div class="drawer-item">
+        <span>{{ $t('settings.sidebarTextTheme') }}</span>
+        <el-switch
+          v-model="sidebarTextTheme"
+          class="drawer-switch"
+        />
+      </div>
     </div>
   </div>
 </template>
 
-<script>
-import ThemePicker from '@/components/ThemePicker'
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+import { SettingsModule } from '@/store/modules/settings'
+import ThemePicker from '@/components/ThemePicker/index.vue'
 
-export default {
-  components: { ThemePicker },
-  data() {
-    return {}
-  },
-  computed: {
-    fixedHeader: {
-      get() {
-        return this.$store.state.settings.fixedHeader
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'fixedHeader',
-          value: val
-        })
-      }
-    },
-    tagsView: {
-      get() {
-        return this.$store.state.settings.tagsView
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'tagsView',
-          value: val
-        })
-      }
-    },
-    sidebarLogo: {
-      get() {
-        return this.$store.state.settings.sidebarLogo
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'sidebarLogo',
-          value: val
-        })
-      }
-    }
-  },
-  methods: {
-    themeChange(val) {
-      this.$store.dispatch('settings/changeSetting', {
-        key: 'theme',
-        value: val
-      })
-    }
+@Component({
+  name: 'Settings',
+  components: {
+    ThemePicker
+  }
+})
+export default class extends Vue {
+  get fixedHeader() {
+    return SettingsModule.fixedHeader
+  }
+
+  set fixedHeader(value) {
+    SettingsModule.ChangeSetting({ key: 'fixedHeader', value })
+  }
+
+  get showTagsView() {
+    return SettingsModule.showTagsView
+  }
+
+  set showTagsView(value) {
+    SettingsModule.ChangeSetting({ key: 'showTagsView', value })
+  }
+
+  get showSidebarLogo() {
+    return SettingsModule.showSidebarLogo
+  }
+
+  set showSidebarLogo(value) {
+    SettingsModule.ChangeSetting({ key: 'showSidebarLogo', value })
+  }
+
+  get sidebarTextTheme() {
+    return SettingsModule.sidebarTextTheme
+  }
+
+  set sidebarTextTheme(value) {
+    SettingsModule.ChangeSetting({ key: 'sidebarTextTheme', value })
+  }
+
+  private themeChange(value: string) {
+    SettingsModule.ChangeSetting({ key: 'theme', value })
   }
 }
 </script>

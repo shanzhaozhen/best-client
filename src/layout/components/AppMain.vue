@@ -1,6 +1,9 @@
 <template>
   <section class="app-main">
-    <transition name="fade-transform" mode="out-in">
+    <transition
+      name="fade-transform"
+      mode="out-in"
+    >
       <keep-alive :include="cachedViews">
         <router-view :key="key" />
       </keep-alive>
@@ -8,16 +11,20 @@
   </section>
 </template>
 
-<script>
-export default {
-  name: 'AppMain',
-  computed: {
-    cachedViews() {
-      return this.$store.state.tagsView.cachedViews
-    },
-    key() {
-      return this.$route.path
-    }
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+import { TagsViewModule } from '@/store/modules/tags-view'
+
+@Component({
+  name: 'AppMain'
+})
+export default class extends Vue {
+  get cachedViews() {
+    return TagsViewModule.cachedViews
+  }
+
+  get key() {
+    return this.$route.path
   }
 }
 </script>
@@ -33,6 +40,8 @@ export default {
 
 .fixed-header+.app-main {
   padding-top: 50px;
+  height: 100vh;
+  overflow: auto;
 }
 
 .hasTagsView {
@@ -43,15 +52,6 @@ export default {
 
   .fixed-header+.app-main {
     padding-top: 84px;
-  }
-}
-</style>
-
-<style lang="scss">
-// fix css style bug in open el-dialog
-.el-popup-parent--hidden {
-  .fixed-header {
-    padding-right: 15px;
   }
 }
 </style>

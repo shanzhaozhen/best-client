@@ -9,17 +9,29 @@
     </el-row>
 
     <el-row :gutter="32">
-      <el-col :xs="24" :sm="24" :lg="8">
+      <el-col
+        :xs="24"
+        :sm="24"
+        :lg="8"
+      >
         <div class="chart-wrapper">
-          <raddar-chart />
+          <radar-chart />
         </div>
       </el-col>
-      <el-col :xs="24" :sm="24" :lg="8">
+      <el-col
+        :xs="24"
+        :sm="24"
+        :lg="8"
+      >
         <div class="chart-wrapper">
           <pie-chart />
         </div>
       </el-col>
-      <el-col :xs="24" :sm="24" :lg="8">
+      <el-col
+        :xs="24"
+        :sm="24"
+        :lg="8"
+      >
         <div class="chart-wrapper">
           <bar-chart />
         </div>
@@ -27,31 +39,54 @@
     </el-row>
 
     <el-row :gutter="8">
-      <el-col :xs="{span: 24}" :sm="{span: 24}" :md="{span: 24}" :lg="{span: 12}" :xl="{span: 12}" style="padding-right:8px;margin-bottom:30px;">
+      <el-col
+        :xs="{span: 24}"
+        :sm="{span: 24}"
+        :md="{span: 24}"
+        :lg="{span: 12}"
+        :xl="{span: 12}"
+        style="padding-right:8px;margin-bottom:30px;"
+      >
         <transaction-table />
       </el-col>
-      <el-col :xs="{span: 24}" :sm="{span: 12}" :md="{span: 12}" :lg="{span: 6}" :xl="{span: 6}" style="margin-bottom:30px;">
+      <el-col
+        :xs="{span: 24}"
+        :sm="{span: 12}"
+        :md="{span: 12}"
+        :lg="{span: 6}"
+        :xl="{span: 6}"
+        style="margin-bottom:30px;"
+      >
         <todo-list />
       </el-col>
-      <el-col :xs="{span: 24}" :sm="{span: 12}" :md="{span: 12}" :lg="{span: 6}" :xl="{span: 6}" style="margin-bottom:30px;">
+      <el-col
+        :xs="{span: 24}"
+        :sm="{span: 12}"
+        :md="{span: 12}"
+        :lg="{span: 6}"
+        :xl="{span: 6}"
+        style="margin-bottom:30px;"
+      >
         <box-card />
       </el-col>
     </el-row>
   </div>
 </template>
 
-<script>
-import GithubCorner from '@/components/GithubCorner'
-import PanelGroup from './components/PanelGroup'
-import LineChart from './components/LineChart'
-import RaddarChart from './components/RaddarChart'
-import PieChart from './components/PieChart'
-import BarChart from './components/BarChart'
-import TransactionTable from './components/TransactionTable'
-import TodoList from './components/TodoList'
-import BoxCard from './components/BoxCard'
+<script lang="ts">
+import 'echarts/theme/macarons.js' // Theme used in BarChart, LineChart, PieChart and RadarChart
+import { Component, Vue } from 'vue-property-decorator'
+import GithubCorner from '@/components/GithubCorner/index.vue'
+import BarChart from './components/BarChart.vue'
+import BoxCard from './components/BoxCard.vue'
+import LineChart, { ILineChartData } from './components/LineChart.vue'
+import PanelGroup from './components/PanelGroup.vue'
+import PieChart from './components/PieChart.vue'
+import RadarChart from './components/RadarChart.vue'
+import TodoList from './components/TodoList/index.vue'
+import TransactionTable from './components/TransactionTable.vue'
 
-const lineChartData = {
+const lineChartData: { [type: string]: ILineChartData } = {
   newVisitis: {
     expectedData: [100, 120, 161, 134, 105, 160, 165],
     actualData: [120, 82, 91, 154, 162, 140, 145]
@@ -70,28 +105,25 @@ const lineChartData = {
   }
 }
 
-export default {
+@Component({
   name: 'DashboardAdmin',
   components: {
     GithubCorner,
-    PanelGroup,
-    LineChart,
-    RaddarChart,
-    PieChart,
     BarChart,
-    TransactionTable,
+    BoxCard,
+    LineChart,
+    PanelGroup,
+    PieChart,
+    RadarChart,
     TodoList,
-    BoxCard
-  },
-  data() {
-    return {
-      lineChartData: lineChartData.newVisitis
-    }
-  },
-  methods: {
-    handleSetLineChartData(type) {
-      this.lineChartData = lineChartData[type]
-    }
+    TransactionTable
+  }
+})
+export default class extends Vue {
+  private lineChartData = lineChartData.newVisitis
+
+  private handleSetLineChartData(type: string) {
+    this.lineChartData = lineChartData[type]
   }
 }
 </script>

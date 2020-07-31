@@ -1,11 +1,21 @@
 <template>
-  <div :class="classObj" class="app-wrapper">
-    <div v-if="device==='mobile'&&sidebar.opened" class="drawer-bg" @click="handleClickOutside" />
+  <div
+    :class="classObj"
+    class="app-wrapper"
+  >
+    <div
+      v-if="classObj.mobile && sidebar.opened"
+      class="drawer-bg"
+      @click="handleClickOutside"
+    />
     <sidebar class="sidebar-container" />
-    <div :class="{hasTagsView:needTagsView}" class="main-container">
-      <div :class="{'fixed-header':fixedHeader}">
+    <div
+      :class="{hasTagsView: showTagsView}"
+      class="main-container"
+    >
+      <div :class="{'fixed-header': fixedHeader}">
         <navbar />
-        <tags-view v-if="needTagsView" />
+        <tags-view v-if="showTagsView" />
       </div>
       <app-main />
       <right-panel v-if="showSettings">
@@ -15,13 +25,16 @@
   </div>
 </template>
 
-<script>
-import RightPanel from '@/components/RightPanel'
+<script lang="ts">
+import { Component } from 'vue-property-decorator'
+import { mixins } from 'vue-class-component'
+import { DeviceType, AppModule } from '@/store/modules/app'
+import { SettingsModule } from '@/store/modules/settings'
 import { AppMain, Navbar, Settings, Sidebar, TagsView } from './components'
-import ResizeMixin from './mixin/ResizeHandler'
-import { mapState } from 'vuex'
+import RightPanel from '@/components/RightPanel/index.vue'
+import ResizeMixin from './mixin/resize'
 
-export default {
+@Component({
   name: 'Layout',
   components: {
     AppMain,
@@ -30,73 +43,130 @@ export default {
     Settings,
     Sidebar,
     TagsView
-  },
-  mixins: [ResizeMixin],
-  computed: {
-    ...mapState({
-      sidebar: state => state.app.sidebar,
-      device: state => state.app.device,
-      showSettings: state => state.settings.showSettings,
-      needTagsView: state => state.settings.tagsView,
-      fixedHeader: state => state.settings.fixedHeader
-    }),
-    classObj() {
-      return {
-        hideSidebar: !this.sidebar.opened,
-        openSidebar: this.sidebar.opened,
-        withoutAnimation: this.sidebar.withoutAnimation,
-        mobile: this.device === 'mobile'
-      }
+  }
+})
+export default class extends mixins(ResizeMixin) {
+  get classObj() {
+    return {
+      hideSidebar: !this.sidebar.opened,
+      openSidebar: this.sidebar.opened,
+      withoutAnimation: this.sidebar.withoutAnimation,
+      mobile: this.device === DeviceType.Mobile
     }
-  },
-  methods: {
-    handleClickOutside() {
-      this.$store.dispatch('app/closeSideBar', { withoutAnimation: false })
-    }
+  }
+
+  get showSettings() {
+    return SettingsModule.showSettings
+  }
+
+  get showTagsView() {
+    return SettingsModule.showTagsView
+  }
+
+  get fixedHeader() {
+    return SettingsModule.fixedHeader
+  }
+
+  private handleClickOutside() {
+    AppModule.CloseSideBar(false)
   }
 }
 </script>
 
 <style lang="scss" scoped>
-  @import "~@/styles/mixin.scss";
-  @import "~@/styles/variables.scss";
+.app-wrapper {
+  @include clearfix;
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
 
-  .app-wrapper {
-    @include clearfix;
-    position: relative;
-    height: 100%;
-    width: 100%;
+.drawer-bg {
+  background: #000;
+  opacity: 0.3;
+  width: 100%;
+  top: 0;
+  height: 100%;
+  position: absolute;
+  z-index: 999;
+}
 
-    &.mobile.openSidebar {
-      position: fixed;
-      top: 0;
-    }
+.main-container {
+  min-height: 100%;
+  transition: margin-left .28s;
+  margin-left: $sideBarWidth;
+  position: relative;
+}
+
+.sidebar-container {
+  transition: width 0.28s;
+  width: $sideBarWidth !important;
+  height: 100%;
+  position: fixed;
+  font-size: 0px;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.fixed-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 9;
+  width: calc(100% - #{$sideBarWidth});
+  transition: width 0.28s;
+}
+
+.hideSidebar {
+  .main-container {
+    margin-left: 54px;
   }
 
-  .drawer-bg {
-    background: #000;
-    opacity: 0.3;
-    width: 100%;
-    top: 0;
-    height: 100%;
-    position: absolute;
-    z-index: 999;
+  .sidebar-container {
+    width: 54px !important;
   }
 
   .fixed-header {
-    position: fixed;
-    top: 0;
-    right: 0;
-    z-index: 9;
-    width: calc(100% - #{$sideBarWidth});
-    transition: width 0.28s;
-  }
-
-  .hideSidebar .fixed-header {
     width: calc(100% - 54px)
   }
+}
 
-  .mobile .fixed-header {
+/* for mobile response 适配移动端 */
+.mobile {
+  .main-container {
+    margin-left: 0px;
+  }
+
+  .sidebar-container {
+    transition: transform .28s;
+    width: $sideBarWidth !important;
+  }
+
+  &.openSidebar {
+    position: fixed;
+    top: 0;
+  }
+
+  &.hideSidebar {
+    .sidebar-container {
+      pointer-events: none;
+      transition-duration: 0.3s;
+      transform: translate3d(-$sideBarWidth, 0, 0);
+    }
+  }
+
+  .fixed-header {
     width: 100%;
   }
+}
+
+.withoutAnimation {
+  .main-container,
+  .sidebar-container {
+    transition: none;
+  }
+}
 </style>

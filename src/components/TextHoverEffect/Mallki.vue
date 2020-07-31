@@ -1,27 +1,28 @@
 <template>
-  <a :class="className" class="link--mallki" href="#">
+  <a
+    :class="className"
+    class="link--mallki"
+    href="#"
+  >
     {{ text }}
     <span :data-letters="text" />
     <span :data-letters="text" />
   </a>
 </template>
 
-<script>
-export default {
-  props: {
-    className: {
-      type: String,
-      default: ''
-    },
-    text: {
-      type: String,
-      default: 'vue-element-admin'
-    }
-  }
+<script lang="ts">
+import { Component, Prop, Vue } from 'vue-property-decorator'
+
+@Component({
+  name: 'Mallki'
+})
+export default class extends Vue {
+  @Prop({ default: '' }) private className!: string
+  @Prop({ default: 'vue-typescript-admin' }) private text!: string
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
 /* Mallki */
 
 .link--mallki {
@@ -36,70 +37,70 @@ export default {
   line-height: 1;
   outline: none;
   text-decoration: none;
-}
 
-.link--mallki:hover {
-  -webkit-transition: none;
-  transition: none;
-  color: transparent;
-}
+  &:hover {
+    -webkit-transition: none;
+    transition: none;
+    color: transparent;
 
-.link--mallki::before {
-  content: '';
-  width: 100%;
-  height: 6px;
-  margin: -3px 0 0 0;
-  background: #3888fa;
-  position: absolute;
-  left: 0;
-  top: 50%;
-  -webkit-transform: translate3d(-100%, 0, 0);
-  transform: translate3d(-100%, 0, 0);
-  -webkit-transition: -webkit-transform 0.4s;
-  transition: transform 0.4s;
-  -webkit-transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
-  transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
-}
+    &::before {
+      -webkit-transform: translate3d(100%, 0, 0);
+      transform: translate3d(100%, 0, 0);
+    }
+  }
 
-.link--mallki:hover::before {
-  -webkit-transform: translate3d(100%, 0, 0);
-  transform: translate3d(100%, 0, 0);
-}
+  &::before {
+    content: '';
+    width: 100%;
+    height: 6px;
+    margin: -3px 0 0 0;
+    background: #3888fa;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    -webkit-transform: translate3d(-100%, 0, 0);
+    transform: translate3d(-100%, 0, 0);
+    -webkit-transition: -webkit-transform 0.4s;
+    transition: transform 0.4s;
+    -webkit-transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+    transition-timing-function: cubic-bezier(0.7, 0, 0.3, 1);
+  }
 
-.link--mallki span {
-  position: absolute;
-  height: 50%;
-  width: 100%;
-  left: 0;
-  top: 0;
-  overflow: hidden;
-}
+  span {
+    position: absolute;
+    height: 50%;
+    width: 100%;
+    left: 0;
+    top: 0;
+    overflow: hidden;
 
-.link--mallki span::before {
-  content: attr(data-letters);
-  color: red;
-  position: absolute;
-  left: 0;
-  width: 100%;
-  color: #3888fa;
-  -webkit-transition: -webkit-transform 0.5s;
-  transition: transform 0.5s;
-}
+    &::before {
+      content: attr(data-letters);
+      color: red;
+      position: absolute;
+      left: 0;
+      width: 100%;
+      color: #3888fa;
+      -webkit-transition: -webkit-transform 0.5s;
+      transition: transform 0.5s;
+    }
 
-.link--mallki span:nth-child(2) {
-  top: 50%;
-}
+    &:nth-child(2) {
+      top: 50%;
+    }
 
-.link--mallki span:first-child::before {
-  top: 0;
-  -webkit-transform: translate3d(0, 100%, 0);
-  transform: translate3d(0, 100%, 0);
-}
+    &:first-child::before {
+      top: 0;
+      -webkit-transform: translate3d(0, 100%, 0);
+      transform: translate3d(0, 100%, 0);
+    }
 
-.link--mallki span:nth-child(2)::before {
-  bottom: 0;
-  -webkit-transform: translate3d(0, -100%, 0);
-  transform: translate3d(0, -100%, 0);
+    &:nth-child(2)::before {
+      bottom: 0;
+      -webkit-transform: translate3d(0, -100%, 0);
+      transform: translate3d(0, -100%, 0);
+    }
+  }
 }
 
 .link--mallki:hover span::before {

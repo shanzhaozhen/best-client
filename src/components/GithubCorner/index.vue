@@ -1,5 +1,10 @@
 <template>
-  <a href="https://github.com/shanzhaozhen/best-client" target="_blank" class="github-corner" aria-label="View source on Github">
+  <a
+    href="https://github.com/armour/vue-typescript-admin-template"
+    target="_blank"
+    class="github-corner"
+    aria-label="View source on Github"
+  >
     <svg
       width="80"
       height="80"
@@ -23,7 +28,16 @@
   </a>
 </template>
 
-<style scoped>
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+
+@Component({
+  name: 'GithubCorner'
+})
+export default class extends Vue {}
+</script>
+
+<style lang="scss" scoped>
 .github-corner:hover .octo-arm {
   animation: octocat-wave 560ms ease-in-out
 }
@@ -33,10 +47,12 @@
   100% {
     transform: rotate(0)
   }
+
   20%,
   60% {
     transform: rotate(-25deg)
   }
+
   40%,
   80% {
     transform: rotate(10deg)
@@ -47,6 +63,7 @@
   .github-corner:hover .octo-arm {
     animation: none
   }
+
   .github-corner .octo-arm {
     animation: octocat-wave 560ms ease-in-out
   }

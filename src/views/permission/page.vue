@@ -4,16 +4,19 @@
   </div>
 </template>
 
-<script>
-import SwitchRoles from './components/SwitchRoles'
+<script lang="ts">
+import { Component, Vue } from 'vue-property-decorator'
+import SwitchRoles from './components/SwitchRoles.vue'
 
-export default {
+@Component({
   name: 'PagePermission',
-  components: { SwitchRoles },
-  methods: {
-    handleRolesChange() {
-      this.$router.push({ path: '/permission/index?' + +new Date() })
-    }
+  components: {
+    SwitchRoles
+  }
+})
+export default class extends Vue {
+  private handleRolesChange() {
+    this.$router.push({ path: '/permission/index?' + +new Date() })
   }
 }
 </script>
